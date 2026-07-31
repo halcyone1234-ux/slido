@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import PollChart from './PollChart.jsx'
+import WordCloud from './WordCloud.jsx'
 import AuctionParticipant from './AuctionParticipant.jsx'
 import { getMyName } from '../identity.js'
 import { checkRoom } from '../api.js'
@@ -74,10 +75,22 @@ export default function Participant({ roomCode }) {
 }
 
 function ParticipantStage({ session }) {
-  const { state, myId, submit, votePoll, answerQuiz, join, leave } = session
+  const { state, myId, submit, votePoll, answerQuiz, setHand, join, leave } = session
   const [text, setText] = useState('')
   const [justSent, setJustSent] = useState(false)
   const [myVote, setMyVote] = useState(null) // 這位參與者投的選項 id
+
+  // ---- 舉手（樂觀更新：按下立刻變，再與伺服器狀態對齊）----
+  const serverHandUp = (state.hands || []).some((h) => h.id === myId)
+  const [handUp, setHandUp] = useState(serverHandUp)
+  useEffect(() => {
+    setHandUp(serverHandUp)
+  }, [serverHandUp])
+  const toggleHand = () => {
+    const next = !handUp
+    setHandUp(next)
+    setHand(next)
+  }
 
   // Presence 現在由連線自動推播；join/leave 保留呼叫（no-op）只是不用動這段既有邏輯。
   useEffect(() => {
@@ -135,7 +148,20 @@ function ParticipantStage({ session }) {
     setMyVote(optionId)
   }
 
-  const myAnswer = state.quiz.responses[myId] || null
+  // 是非題：樂觀更新——按下當下就變色（不等伺服器往返），答完鎖死兩顆不能改。
+  // pending 會在「伺服器回報的答案」或「換題目」時重新對齊。
+  const serverAnswer = state.quiz.responses[myId] || null
+  const [pendingAnswer, setPendingAnswer] = useState(serverAnswer)
+  useEffect(() => {
+    setPendingAnswer(serverAnswer)
+  }, [serverAnswer, state.quiz.question])
+  const myAnswer = pendingAnswer || serverAnswer
+  const quizAnswered = Boolean(myAnswer)
+  const chooseQuiz = (choice) => {
+    if (quizLocked || quizAnswered) return // 答完鎖死、時間到鎖死
+    setPendingAnswer(choice) // 立即回饋
+    answerQuiz(myId, choice)
+  }
 
   return (
     <div className="phone">
@@ -169,8 +195,8 @@ function ParticipantStage({ session }) {
                 className={`quiz-choice quiz-choice-o ${
                   myAnswer === 'O' ? 'selected' : ''
                 }`}
-                disabled={quizLocked}
-                onClick={() => answerQuiz(myId, 'O')}
+                disabled={quizLocked || quizAnswered}
+                onClick={() => chooseQuiz('O')}
               >
                 <span className="quiz-choice-mark">⭕</span>
                 <span className="quiz-choice-label">對</span>
@@ -179,20 +205,25 @@ function ParticipantStage({ session }) {
                 className={`quiz-choice quiz-choice-x ${
                   myAnswer === 'X' ? 'selected' : ''
                 }`}
-                disabled={quizLocked}
-                onClick={() => answerQuiz(myId, 'X')}
+                disabled={quizLocked || quizAnswered}
+                onClick={() => chooseQuiz('X')}
               >
                 <span className="quiz-choice-mark">❌</span>
                 <span className="quiz-choice-label">錯</span>
               </button>
             </div>
+            {quizAnswered && !quizLocked && (
+              <div className="quiz-answered-banner">
+                已送出 ✓ 你選了 {myAnswer === 'O' ? '⭕ 對' : '❌ 錯'}
+              </div>
+            )}
             <p className="phone-hint">
               {quizLocked
                 ? myAnswer
                   ? `時間到！你選了 ${myAnswer === 'O' ? '⭕ 對' : '❌ 錯'}`
                   : '時間到，無法作答'
-                : myAnswer
-                  ? '已作答 ✓ 想改的話再點另一個即可'
+                : quizAnswered
+                  ? '答案已鎖定，等待主持人公佈統計'
                   : '點 ⭕ 或 ❌ 作答，主持人會看到即時統計'}
             </p>
           </>
@@ -237,9 +268,29 @@ function ParticipantStage({ session }) {
                 </p>
               </>
             )}
+
+            {/* 一律顯示大家的答案（不必等自己答完）— 手機縮小版文字雲 */}
+            <div className="phone-cloud">
+              <div className="phone-cloud-title">💬 大家的答案</div>
+              {state.submissions.length === 0 ? (
+                <div className="phone-cloud-empty">還沒有人回答，當第一個吧！</div>
+              ) : (
+                <WordCloud submissions={state.submissions} compact />
+              )}
+            </div>
           </>
         )}
       </div>
+
+      {!dinoOn && (
+        <button
+          className={`hand-fab ${handUp ? 'up' : ''}`}
+          onClick={toggleHand}
+          aria-pressed={handUp}
+        >
+          {handUp ? '✋ 放下手' : '✋ 舉手'}
+        </button>
+      )}
 
       {dinoOn && <DinoGame onScore={reportScore} />}
     </div>

@@ -49,6 +49,9 @@ const messageSchemas = {
   }),
   'auction.reset': z.object({ type: z.literal('auction.reset') }),
 
+  'hand.set': z.object({ type: z.literal('hand.set'), raised: z.boolean() }),
+  'hand.clearAll': z.object({ type: z.literal('hand.clearAll') }),
+
   'dino.jump': z.object({ type: z.literal('dino.jump') }),
   'dino.setActive': z.object({ type: z.literal('dino.setActive'), active: z.boolean() }),
   'dino.score': z.object({ type: z.literal('dino.score'), score: z.number().min(0).max(1_000_000) }),

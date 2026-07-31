@@ -68,7 +68,9 @@ function PresenterStage({ session, roomCode }) {
     resetQuiz,
     startQuizRound,
     endQuizRound,
+    clearHands,
   } = session
+  const hands = state.hands || []
   const [draft, setDraft] = useState(state.question)
   const [pollQ, setPollQ] = useState(state.poll.question)
   const [pollOpts, setPollOpts] = useState(
@@ -334,6 +336,24 @@ function PresenterStage({ session, roomCode }) {
         參與者請在另一個分頁開啟 <code>#join</code>，或按右上角
         <strong> 📷 加入 QR</strong> 掃描
       </footer>
+
+      {hands.length > 0 && (
+        <div className="hands-panel">
+          <div className="hands-panel-head">
+            <span className="hands-count">✋ {hands.length} 人舉手</span>
+            <button className="hands-clear" onClick={clearHands}>
+              全部放下
+            </button>
+          </div>
+          <div className="hands-names">
+            {hands.map((h) => (
+              <span key={h.id} className="hand-chip">
+                {h.name}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
 
       {showQr && <QrJoin roomCode={roomCode} onClose={() => setShowQr(false)} />}
       {idle && (

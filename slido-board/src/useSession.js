@@ -21,6 +21,7 @@ const emptyState = {
   poll: { question: '', options: [] },
   quiz: { question: '', responses: {}, endsAt: null, durationSec: null },
   presence: {},
+  hands: [], // [{ id, name }] 目前舉手者，記憶體即時態
   auction: { status: 'idle', item: '', highestBid: 0, highestBidder: null, participants: {}, sold: [] },
 }
 
@@ -87,6 +88,10 @@ export function useSession(opts) {
   const startQuizRound = useCallback((seconds) => send({ type: 'quiz.start', seconds }), [])
   const endQuizRound = useCallback(() => send({ type: 'quiz.end' }), [])
 
+  // 舉手：參與者切換自己舉手/放下；主持人一鍵全部放下。
+  const setHand = useCallback((raised) => send({ type: 'hand.set', raised }), [])
+  const clearHands = useCallback(() => send({ type: 'hand.clearAll' }), [])
+
   // Presence 現在由連線存活狀態自動推播，這兩個保留成 no-op 是為了不用動
   // Participant.jsx 既有的 join/leave 呼叫點。
   const join = useCallback(() => {}, [])
@@ -117,6 +122,8 @@ export function useSession(opts) {
     resetQuiz,
     startQuizRound,
     endQuizRound,
+    setHand,
+    clearHands,
     join,
     leave,
     registerBidder,

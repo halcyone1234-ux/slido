@@ -23,6 +23,7 @@ async function loadRoom(roomId, code) {
     poll,
     quiz,
     auction,
+    hands: new Set(), // participantId 集合；記憶體即時態，斷線自動移除、不進資料庫
     dino: { active: false, roundId: null, scores: [] },
   }
 }
@@ -36,9 +37,17 @@ async function getRoom(roomId, code) {
 
 function toClientState(room) {
   const presence = {}
+  const nameById = {}
   for (const sock of room.sockets) {
-    if (sock.role === 'participant') presence[sock.participantId] = true
+    if (sock.role === 'participant') {
+      presence[sock.participantId] = true
+      nameById[sock.participantId] = sock.displayName || '參與者'
+    }
   }
+  // 只回報「目前仍連線」的舉手者（斷線者已在 close 事件移除，這裡再過濾一次保險）
+  const hands = [...(room.hands || [])]
+    .filter((id) => nameById[id])
+    .map((id) => ({ id, name: nameById[id] }))
   return {
     mode: room.mode,
     question: room.wordcloud.question,
@@ -51,6 +60,7 @@ function toClientState(room) {
       durationSec: room.quiz.durationSec,
     },
     presence,
+    hands,
     auction: {
       status: room.auction.status,
       item: room.auction.item,

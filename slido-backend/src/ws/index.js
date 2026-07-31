@@ -11,6 +11,7 @@ const wordcloudHandlers = require('./handlers/wordcloud')
 const pollHandlers = require('./handlers/poll')
 const quizHandlers = require('./handlers/quiz')
 const auctionHandlers = require('./handlers/auction')
+const handHandlers = require('./handlers/hand')
 const dinoHandlers = require('./handlers/dino')
 
 const HELLO_TIMEOUT_MS = 10_000
@@ -43,6 +44,8 @@ const handlers = {
   'auction.useItem': auctionHandlers.useItem,
   'auction.giveMoney': auctionHandlers.giveMoney,
   'auction.reset': auctionHandlers.reset,
+  'hand.set': handHandlers.set,
+  'hand.clearAll': handHandlers.clearAll,
   'dino.jump': dinoHandlers.jump,
   'dino.setActive': dinoHandlers.setActive,
   'dino.score': dinoHandlers.score,
@@ -183,7 +186,10 @@ function createWsServer(httpServer) {
         room.dino.active = false
         roomState.broadcastDino(room)
       }
-      if (ws.role === 'participant') roomState.broadcastState(room)
+      if (ws.role === 'participant') {
+        if (room.hands) room.hands.delete(ws.participantId) // 斷線＝自動放下手
+        roomState.broadcastState(room)
+      }
     })
   })
 

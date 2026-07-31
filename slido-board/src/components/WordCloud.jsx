@@ -18,7 +18,7 @@ function aggregate(submissions) {
   return [...map.values()].sort((a, b) => b.count - a.count)
 }
 
-export default function WordCloud({ submissions }) {
+export default function WordCloud({ submissions, compact = false }) {
   const words = useMemo(() => aggregate(submissions), [submissions])
 
   if (words.length === 0) {
@@ -30,13 +30,15 @@ export default function WordCloud({ submissions }) {
   }
 
   const maxCount = words[0].count
+  // 手機縮小版（compact）字級較小，避免撐爆手機畫面
+  const minSize = compact ? 15 : 20
+  const range = compact ? 27 : 68
 
   return (
-    <div className="wordcloud">
+    <div className={`wordcloud ${compact ? 'wordcloud-compact' : ''}`}>
       {words.map((w, i) => {
-        // 字級 20 ~ 88px，依相對次數內插
         const ratio = maxCount === 1 ? 1 : w.count / maxCount
-        const size = 20 + ratio * 68
+        const size = minSize + ratio * range
         return (
           <span
             key={w.text + i}
