@@ -1,15 +1,11 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useSession, SAMPLE_QUESTIONS } from '../useSession.js'
 import { createRoom } from '../api.js'
-import { sendGame, subscribe } from '../dinoBus.js'
 import WordCloud from './WordCloud.jsx'
 import PollChart from './PollChart.jsx'
 import QuizStats from './QuizStats.jsx'
 import QrJoin from './QrJoin.jsx'
 import AuctionPresenter from './AuctionPresenter.jsx'
-import DinoResults from './DinoResults.jsx'
-
-const IDLE_MS = 10000 // demo 用：靜止 10 秒後出現恐龍小遊戲（正式課堂可改回 30000）
 
 function usePresenterRoom(roomCode) {
   const [code, setCode] = useState(roomCode)
@@ -76,89 +72,16 @@ function PresenterStage({ session, roomCode }) {
   const [pollOpts, setPollOpts] = useState(
     state.poll.options.map((o) => o.label).join('\n'),
   )
+  const [pollMulti, setPollMulti] = useState(Boolean(state.poll.multi))
   const [quizDraft, setQuizDraft] = useState(state.quiz.question)
   const [showQr, setShowQr] = useState(false)
-
-  // ---- 閒置偵測：靜止一段時間 → 學生端出現恐龍小遊戲 ----
-  const [idle, setIdle] = useState(false)
-  const idleRef = useRef(false)
-  const lastActivityRef = useRef(Date.now())
-
-  // 學生回傳的恐龍戰績（id -> { name, best }）
-  const [dinoScores, setDinoScores] = useState({})
-  const dinoScoresRef = useRef({})
-  const [showResults, setShowResults] = useState(false)
-
-  const setScores = useCallback((next) => {
-    dinoScoresRef.current = next
-    setDinoScores(next)
-  }, [])
-
-  const exitDino = useCallback(() => {
-    idleRef.current = false
-    setIdle(false)
-    sendGame(false)
-    lastActivityRef.current = Date.now()
-    // 收回時若有人玩過，跳出戰績榜
-    if (Object.keys(dinoScoresRef.current).length > 0) setShowResults(true)
-  }, [])
-
-  // 真實互動（共享狀態改變）→ 重置閒置計時、關閉遊戲
-  useEffect(() => {
-    lastActivityRef.current = Date.now()
-    if (idleRef.current) {
-      idleRef.current = false
-      setIdle(false)
-      sendGame(false)
-      if (Object.keys(dinoScoresRef.current).length > 0) setShowResults(true)
-    }
-  }, [state])
-
-  // 接收學生回傳的分數，保留每人最佳
-  useEffect(() => {
-    const unsub = subscribe((e) => {
-      if (!e.data || e.data.type !== 'score') return
-      const { id, name, score } = e.data
-      const prev = dinoScoresRef.current[id]
-      if (!prev || score > prev.best) {
-        setScores({ ...dinoScoresRef.current, [id]: { name, best: score } })
-      }
-    })
-    return unsub
-  }, [setScores])
-
-  // 本機輸入（只在累積閒置期間重置）+ 每秒偵測
-  useEffect(() => {
-    const onActivity = () => {
-      if (!idleRef.current) lastActivityRef.current = Date.now()
-    }
-    window.addEventListener('pointerdown', onActivity)
-    window.addEventListener('keydown', onActivity)
-    window.addEventListener('mousemove', onActivity)
-    const iv = setInterval(() => {
-      if (idleRef.current) return // 伺服器現在是權威來源，斷線會自動復原，不用心跳
-      if (Date.now() - lastActivityRef.current >= IDLE_MS) {
-        idleRef.current = true
-        setScores({}) // 新一輪，清空舊戰績
-        setShowResults(false)
-        setIdle(true)
-        sendGame(true)
-      }
-    }, 1000)
-    return () => {
-      window.removeEventListener('pointerdown', onActivity)
-      window.removeEventListener('keydown', onActivity)
-      window.removeEventListener('mousemove', onActivity)
-      clearInterval(iv)
-    }
-  }, [setScores])
 
   const applyQuestion = () => {
     if (draft.trim()) setQuestion(draft.trim())
   }
 
   const applyPoll = () => {
-    setPoll(pollQ.trim() || '投票', pollOpts.split('\n'))
+    setPoll(pollQ.trim() || '投票', pollOpts.split('\n'), pollMulti)
   }
 
   const isAuction = state.mode === 'auction'
@@ -226,6 +149,14 @@ function PresenterStage({ session, roomCode }) {
                   rows={4}
                 />
                 <div className="poll-editor-btns">
+                  <label className="poll-multi-toggle">
+                    <input
+                      type="checkbox"
+                      checked={pollMulti}
+                      onChange={(e) => setPollMulti(e.target.checked)}
+                    />
+                    允許複選
+                  </label>
                   <button className="btn-primary" onClick={applyPoll}>
                     更新投票
                   </button>
@@ -315,6 +246,9 @@ function PresenterStage({ session, roomCode }) {
                 : state.mode === 'quiz'
                   ? state.quiz.question
                   : state.question}
+              {state.mode === 'poll' && state.poll.multi && (
+                <span className="poll-multi-badge">可複選</span>
+              )}
             </h1>
             <div className="stage-display">
               {state.mode === 'wordcloud' && (
@@ -356,17 +290,6 @@ function PresenterStage({ session, roomCode }) {
       )}
 
       {showQr && <QrJoin roomCode={roomCode} onClose={() => setShowQr(false)} />}
-      {idle && (
-        <button className="host-dino-badge" onClick={exitDino}>
-          🦖 學生待機遊戲中… 點此收回
-        </button>
-      )}
-      {showResults && (
-        <DinoResults
-          scores={dinoScores}
-          onClose={() => setShowResults(false)}
-        />
-      )}
     </div>
   )
 }

@@ -22,9 +22,11 @@ const messageSchemas = {
     type: z.literal('poll.set'),
     question: z.string().min(1).max(200),
     labels: z.array(z.string().max(80)).min(1).max(8),
+    multi: z.boolean().optional(),
   }),
   'poll.reset': z.object({ type: z.literal('poll.reset') }),
-  'poll.vote': z.object({ type: z.literal('poll.vote'), optionId: z.string().uuid() }),
+  // optionIds＝參與者目前勾選的完整集合；空陣列＝取消所有勾選
+  'poll.vote': z.object({ type: z.literal('poll.vote'), optionIds: z.array(z.string().uuid()).max(8) }),
 
   'quiz.setQuestion': z.object({ type: z.literal('quiz.setQuestion'), question: z.string().min(1).max(200) }),
   'quiz.reset': z.object({ type: z.literal('quiz.reset') }),
@@ -51,10 +53,6 @@ const messageSchemas = {
 
   'hand.set': z.object({ type: z.literal('hand.set'), raised: z.boolean() }),
   'hand.clearAll': z.object({ type: z.literal('hand.clearAll') }),
-
-  'dino.jump': z.object({ type: z.literal('dino.jump') }),
-  'dino.setActive': z.object({ type: z.literal('dino.setActive'), active: z.boolean() }),
-  'dino.score': z.object({ type: z.literal('dino.score'), score: z.number().min(0).max(1_000_000) }),
 
   'room.end': z.object({ type: z.literal('room.end') }),
 }

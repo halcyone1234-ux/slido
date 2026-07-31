@@ -6,8 +6,8 @@ const BAR_COLORS = [
 ]
 
 // 即時投票。onVote 有傳入時每條可點（參與者端）；否則唯讀（投影幕）。
-// selectedId 標示目前這位參與者投的選項。
-export default function PollChart({ poll, onVote, selectedId }) {
+// selectedIds 標示目前這位參與者投的選項（複選題可能不只一個）。
+export default function PollChart({ poll, onVote, selectedIds = [] }) {
   const total = useMemo(
     () => poll.options.reduce((sum, o) => sum + o.votes, 0),
     [poll.options],
@@ -22,7 +22,7 @@ export default function PollChart({ poll, onVote, selectedId }) {
       {poll.options.map((o, i) => {
         const pct = total === 0 ? 0 : Math.round((o.votes / total) * 100)
         const color = BAR_COLORS[i % BAR_COLORS.length]
-        const active = o.id === selectedId
+        const active = selectedIds.includes(o.id)
         return (
           <button
             key={o.id}

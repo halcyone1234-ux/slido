@@ -1,13 +1,10 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect } from 'react'
 import PollChart from './PollChart.jsx'
 import WordCloud from './WordCloud.jsx'
 import AuctionParticipant from './AuctionParticipant.jsx'
-import { getMyName } from '../identity.js'
 import { checkRoom } from '../api.js'
 import { useSession } from '../useSession.js'
 import { useCountdown } from '../useCountdown.js'
-import { subscribe, sendScore } from '../dinoBus.js'
-import DinoGame from './DinoGame.jsx'
 
 function JoinByCode() {
   const [code, setCode] = useState('')
@@ -78,7 +75,12 @@ function ParticipantStage({ session }) {
   const { state, myId, submit, votePoll, answerQuiz, setHand, join, leave } = session
   const [text, setText] = useState('')
   const [justSent, setJustSent] = useState(false)
-  const [myVote, setMyVote] = useState(null) // 這位參與者投的選項 id
+  const [myVotes, setMyVotes] = useState([]) // 這位參與者目前勾選的選項 id（複選題可多個）
+
+  // 主持人更新投票（換了 pollId）→ 清掉本機勾選狀態
+  useEffect(() => {
+    setMyVotes([])
+  }, [state.poll.pollId])
 
   // ---- 舉手（樂觀更新：按下立刻變，再與伺服器狀態對齊）----
   const serverHandUp = (state.hands || []).some((h) => h.id === myId)
@@ -106,31 +108,6 @@ function ParticipantStage({ session }) {
   const quizCd = useCountdown(state.quiz.endsAt)
   const quizLocked = Boolean(state.quiz.endsAt) && quizCd.timeUp
 
-  // 恐龍待機遊戲：收到投影幕的心跳就顯示「跳」鈕，超過 4 秒沒心跳則隱藏
-  const [dinoOn, setDinoOn] = useState(false)
-  useEffect(() => {
-    let hideTimer
-    const unsub = subscribe((e) => {
-      if (!e.data || e.data.type !== 'game') return
-      clearTimeout(hideTimer)
-      if (e.data.active) {
-        setDinoOn(true)
-        hideTimer = setTimeout(() => setDinoOn(false), 4000)
-      } else {
-        setDinoOn(false)
-      }
-    })
-    return () => {
-      unsub()
-      clearTimeout(hideTimer)
-    }
-  }, [])
-
-  const reportScore = useCallback(
-    (score) => sendScore({ id: myId, name: getMyName(), score }),
-    [myId],
-  )
-
   const send = () => {
     if (!text.trim()) return
     submit(text, myId)
@@ -143,9 +120,18 @@ function ParticipantStage({ session }) {
   const wcAnswered = state.submissions.some((s) => s.by === myId)
 
   const handleVote = (optionId) => {
-    if (optionId === myVote) return
-    votePoll(optionId, myVote) // 傳入舊選項以支援「改票」
-    setMyVote(optionId)
+    let next
+    if (state.poll.multi) {
+      // 複選：點一下勾選、再點一下取消，永遠送出目前的完整集合
+      next = myVotes.includes(optionId)
+        ? myVotes.filter((id) => id !== optionId)
+        : [...myVotes, optionId]
+    } else {
+      if (myVotes.length === 1 && myVotes[0] === optionId) return
+      next = [optionId]
+    }
+    setMyVotes(next)
+    votePoll(next)
   }
 
   // 是非題：樂觀更新——按下當下就變色（不等伺服器往返），答完鎖死兩顆不能改。
@@ -233,10 +219,12 @@ function ParticipantStage({ session }) {
             <PollChart
               poll={state.poll}
               onVote={handleVote}
-              selectedId={myVote}
+              selectedIds={myVotes}
             />
             <p className="phone-hint">
-              點選一個選項投票，長條圖會即時更新；再點別的選項可以改票。
+              {state.poll.multi
+                ? '本題可複選：點選項勾選、再點一次取消，長條圖會即時更新。'
+                : '點選一個選項投票，長條圖會即時更新；再點別的選項可以改票。'}
             </p>
           </>
         ) : (
@@ -282,17 +270,13 @@ function ParticipantStage({ session }) {
         )}
       </div>
 
-      {!dinoOn && (
-        <button
-          className={`hand-fab ${handUp ? 'up' : ''}`}
-          onClick={toggleHand}
-          aria-pressed={handUp}
-        >
-          {handUp ? '✋ 放下手' : '✋ 舉手'}
-        </button>
-      )}
-
-      {dinoOn && <DinoGame onScore={reportScore} />}
+      <button
+        className={`hand-fab ${handUp ? 'up' : ''}`}
+        onClick={toggleHand}
+        aria-pressed={handUp}
+      >
+        {handUp ? '✋ 放下手' : '✋ 舉手'}
+      </button>
     </div>
   )
 }

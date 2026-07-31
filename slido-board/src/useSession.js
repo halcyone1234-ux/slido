@@ -18,7 +18,7 @@ const emptyState = {
   mode: 'wordcloud',
   question: '',
   submissions: [],
-  poll: { question: '', options: [] },
+  poll: { pollId: null, question: '', options: [], multi: false },
   quiz: { question: '', responses: {}, endsAt: null, durationSec: null },
   presence: {},
   hands: [], // [{ id, name }] 目前舉手者，記憶體即時態
@@ -78,8 +78,12 @@ export function useSession(opts) {
   const submit = useCallback((text) => send({ type: 'wordcloud.submit', text }), [])
   const clearSubmissions = useCallback(() => send({ type: 'wordcloud.clear' }), [])
 
-  const setPoll = useCallback((question, labels) => send({ type: 'poll.set', question, labels }), [])
-  const votePoll = useCallback((optionId) => send({ type: 'poll.vote', optionId }), [])
+  const setPoll = useCallback(
+    (question, labels, multi) => send({ type: 'poll.set', question, labels, multi: Boolean(multi) }),
+    [],
+  )
+  // optionIds＝目前勾選的完整集合（單選＝一個、取消全部＝空陣列）
+  const votePoll = useCallback((optionIds) => send({ type: 'poll.vote', optionIds }), [])
   const resetPoll = useCallback(() => send({ type: 'poll.reset' }), [])
 
   const setQuizQuestion = useCallback((question) => send({ type: 'quiz.setQuestion', question }), [])

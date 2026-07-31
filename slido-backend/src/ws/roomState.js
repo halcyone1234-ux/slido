@@ -24,7 +24,6 @@ async function loadRoom(roomId, code) {
     quiz,
     auction,
     hands: new Set(), // participantId 集合；記憶體即時態，斷線自動移除、不進資料庫
-    dino: { active: false, roundId: null, scores: [] },
   }
 }
 
@@ -52,7 +51,12 @@ function toClientState(room) {
     mode: room.mode,
     question: room.wordcloud.question,
     submissions: room.wordcloud.submissions,
-    poll: { question: room.poll.question, options: room.poll.options },
+    poll: {
+      pollId: room.poll.pollId,
+      question: room.poll.question,
+      options: room.poll.options,
+      multi: Boolean(room.poll.multi),
+    },
     quiz: {
       question: room.quiz.question,
       responses: room.quiz.responses,
@@ -84,14 +88,4 @@ function broadcastState(room) {
   broadcastAll(room, { type: 'state', state: toClientState(room) })
 }
 
-function broadcastDino(room) {
-  broadcastAll(room, { type: 'dino.state', active: room.dino.active, scores: room.dino.scores })
-}
-
-function relayDinoJump(room, fromSocket) {
-  for (const sock of room.sockets) {
-    if (sock !== fromSocket && sock.role === 'presenter') send(sock, { type: 'dino.jump' })
-  }
-}
-
-module.exports = { getRoom, toClientState, broadcastState, broadcastDino, broadcastAll, relayDinoJump, send, rooms }
+module.exports = { getRoom, toClientState, broadcastState, broadcastAll, send, rooms }

@@ -375,6 +375,34 @@ button {
 .poll-editor-btns {
   display: flex;
   gap: 10px;
+  align-items: center;
+}
+.poll-multi-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  color: #e2e8f0;
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+}
+.poll-multi-toggle input {
+  accent-color: #6366f1;
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+.poll-multi-badge {
+  display: inline-block;
+  margin-left: 12px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: rgba(99, 102, 241, 0.25);
+  color: #c7d2fe;
+  font-size: 0.45em;
+  font-weight: 600;
+  vertical-align: middle;
 }
 
 /* ---------- 投票 ---------- */
@@ -1551,116 +1579,7 @@ button {
   border-radius: 999px;
 }
 
-/* ---------- 恐龍待機小遊戲 ---------- */
-.dino-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 60;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 18px;
-  padding: 24px;
-  background: linear-gradient(160deg, #0b1020, #131a35 70%);
-  animation: pop 0.25s ease;
-}
-.dino-head {
-  display: flex;
-  align-items: center;
-  gap: 20px;
-  color: #e2e8f0;
-  font-size: 20px;
-  font-weight: 700;
-}
-.dino-exit {
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  background: rgba(255, 255, 255, 0.06);
-  color: #cbd5e1;
-  padding: 8px 16px;
-  border-radius: 10px;
-  font-weight: 600;
-}
-.dino-exit:hover {
-  border-color: var(--violet);
-  color: #fff;
-}
-.dino-canvas {
-  width: 100%;
-  max-width: 900px;
-  height: auto; /* 維持長寬比，手機縮放不變形 */
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 16px;
-  cursor: pointer;
-}
 /* host 端：學生遊戲中的角落收回鈕（老師不能玩，只能收回） */
-.host-dino-badge {
-  position: fixed;
-  right: 20px;
-  bottom: 20px;
-  z-index: 40;
-  border: 1px solid rgba(251, 191, 36, 0.5);
-  background: rgba(251, 191, 36, 0.14);
-  color: #fbbf24;
-  font-weight: 700;
-  padding: 12px 18px;
-  border-radius: 999px;
-  box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
-}
-.host-dino-badge:hover {
-  background: rgba(251, 191, 36, 0.24);
-}
-
-/* 恐龍戰績榜 */
-.dino-rank {
-  list-style: none;
-  margin: 0 0 16px;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-.dino-rank-row {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  padding: 12px 16px;
-  border-radius: 12px;
-  background: #f8fafc;
-}
-.dino-rank-row.top {
-  background: linear-gradient(135deg, #fffbeb, #fef3c7);
-  border: 1px solid #fcd34d;
-}
-.dino-rank-pos {
-  font-size: 20px;
-  font-weight: 800;
-  min-width: 32px;
-  text-align: center;
-}
-.dino-rank-name {
-  flex: 1;
-  font-weight: 700;
-}
-.dino-rank-score {
-  font-variant-numeric: tabular-nums;
-  font-weight: 800;
-  color: var(--indigo);
-  font-size: 18px;
-}
-.dino-rank-hint {
-  text-align: center;
-  color: var(--slate);
-  font-size: 14px;
-  margin: 0;
-}
-.dino-hint {
-  color: #94a3b8;
-  font-size: 15px;
-  text-align: center;
-}
-
 @media (max-width: 720px) {
   .auction-body {
     grid-template-columns: 1fr;

@@ -12,7 +12,6 @@ const pollHandlers = require('./handlers/poll')
 const quizHandlers = require('./handlers/quiz')
 const auctionHandlers = require('./handlers/auction')
 const handHandlers = require('./handlers/hand')
-const dinoHandlers = require('./handlers/dino')
 
 const HELLO_TIMEOUT_MS = 10_000
 const IP_CONNECT_LIMIT = 20
@@ -46,9 +45,6 @@ const handlers = {
   'auction.reset': auctionHandlers.reset,
   'hand.set': handHandlers.set,
   'hand.clearAll': handHandlers.clearAll,
-  'dino.jump': dinoHandlers.jump,
-  'dino.setActive': dinoHandlers.setActive,
-  'dino.score': dinoHandlers.score,
   'room.end': async (room, ws) => {
     if (ws.role !== 'presenter') return
     await roomService.endRoom(room.roomId)
@@ -113,7 +109,6 @@ async function handleHello(ws, data) {
     participantId: ws.participantId || null,
     clientToken: ws._newClientToken || null,
     state: roomState.toClientState(room),
-    dino: { active: room.dino.active, scores: room.dino.scores },
   })
 
   if (ws.role === 'participant') roomState.broadcastState(room)
@@ -182,10 +177,6 @@ function createWsServer(httpServer) {
       const room = ws.room
       if (!room) return
       room.sockets.delete(ws)
-      if (ws.role === 'presenter' && room.dino.active) {
-        room.dino.active = false
-        roomState.broadcastDino(room)
-      }
       if (ws.role === 'participant') {
         if (room.hands) room.hands.delete(ws.participantId) // 斷線＝自動放下手
         roomState.broadcastState(room)

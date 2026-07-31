@@ -17,5 +17,7 @@ module.exports = {
     database: required('DB_NAME'),
     user: required('DB_USER'),
     password: required('DB_PASSWORD'),
+    // 雲端託管的 Postgres（如 Neon）強制 SSL；設 DB_SSL=true 才啟用，預設關閉不影響原行為。
+    ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : false,
   },
 }

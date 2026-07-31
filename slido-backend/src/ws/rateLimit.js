@@ -1,5 +1,4 @@
-// Fixed-window per-socket limiters. dino.jump gets its own tighter window since it's
-// explicitly a high-frequency live-control signal, distinct from normal actions.
+// Fixed-window per-socket limiter shared by all message types.
 function makeLimiter(limit, windowMs) {
   return () => {
     let count = 0
@@ -17,15 +16,12 @@ function makeLimiter(limit, windowMs) {
 }
 
 const createGeneralLimiter = makeLimiter(30, 1000)
-const createDinoJumpLimiter = makeLimiter(10, 1000)
 
 function attachRateLimiters(ws) {
   ws._generalLimit = createGeneralLimiter()
-  ws._dinoJumpLimit = createDinoJumpLimiter()
 }
 
-function allowMessage(ws, type) {
-  if (type === 'dino.jump') return ws._dinoJumpLimit()
+function allowMessage(ws) {
   return ws._generalLimit()
 }
 

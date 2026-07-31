@@ -1,5 +1,5 @@
 // Single shared WebSocket connection for the currently mounted room view
-// (presenter or participant). useSession.js and dinoBus.js both send/receive
+// (presenter or participant). useSession.js sends/receives
 // over this one connection, replacing the old BroadcastChannel+localStorage
 // same-browser-only sync layer with real cross-device sync.
 
