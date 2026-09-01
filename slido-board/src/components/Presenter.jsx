@@ -119,6 +119,14 @@ function PresenterStage({ session, roomCode }) {
             >
               🔨 拍賣會
             </button>
+            <a
+              className="mode-ext"
+              href="https://gamepark.bonmipang.com"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              🎮 米花遊戲城 ↗
+            </a>
           </div>
           <button className="qr-btn" onClick={() => setShowQr(true)}>
             📷 加入 QR

@@ -1,0 +1,32 @@
+# Render 部署藍圖（Blueprint）。單一 Web 服務：後端同時服務前端靜態檔＋API＋WebSocket。
+# 用法：Render 後台 → New → Blueprint → 連本 repo，Render 會依此檔建立服務。
+# 密鑰（Neon 資料庫連線）標為 sync:false，不寫進 repo，於 Render 後台各自填入。
+services:
+  - type: web
+    name: slido-board
+    runtime: node
+    plan: free
+    # 建置：裝前端相依→build 出 dist→裝後端相依→跑 Neon migration
+    buildCommand: cd slido-board && npm ci && npm run build && cd ../slido-backend && npm ci && npx knex migrate:latest --env production
+    startCommand: cd slido-backend && node src/server.js
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      # Render 要求服務綁 0.0.0.0 才能對外；PORT 由 Render 自動注入，程式已會讀取。
+      - key: HOST
+        value: 0.0.0.0
+      - key: DB_SSL
+        value: "true"
+      - key: DB_PORT
+        value: "5432"
+      # 以下為機密，於 Render 後台填入（不寫進 repo）。CORS_ORIGIN 可留空，
+      # 程式會自動改用 Render 注入的 RENDER_EXTERNAL_URL（本服務公開網址）。
+      - key: DB_HOST
+        sync: false
+      - key: DB_NAME
+        sync: false
+      - key: DB_USER
+        sync: false
+      - key: DB_PASSWORD
+        sync: false
