@@ -6,6 +6,7 @@ import PollChart from './PollChart.jsx'
 import QuizStats from './QuizStats.jsx'
 import QrJoin from './QrJoin.jsx'
 import AuctionPresenter from './AuctionPresenter.jsx'
+import ReviewPresenter from './ReviewPresenter.jsx'
 
 function usePresenterRoom(roomCode) {
   const [code, setCode] = useState(roomCode)
@@ -85,6 +86,7 @@ function PresenterStage({ session, roomCode }) {
   }
 
   const isAuction = state.mode === 'auction'
+  const isReview = state.mode === 'review'
 
   return (
     <div className="stage">
@@ -119,6 +121,12 @@ function PresenterStage({ session, roomCode }) {
             >
               🔨 拍賣會
             </button>
+            <button
+              className={state.mode === 'review' ? 'active' : ''}
+              onClick={() => setMode('review')}
+            >
+              🏆 期中複習
+            </button>
             <a
               className="mode-ext"
               href="https://gamepark.bonmipang.com"
@@ -137,6 +145,10 @@ function PresenterStage({ session, roomCode }) {
       {isAuction ? (
         <main className="stage-main stage-main-auction">
           <AuctionPresenter session={session} />
+        </main>
+      ) : isReview ? (
+        <main className="stage-main stage-main-review">
+          <ReviewPresenter session={session} />
         </main>
       ) : (
         <>

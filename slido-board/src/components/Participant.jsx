@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import PollChart from './PollChart.jsx'
 import WordCloud from './WordCloud.jsx'
 import AuctionParticipant from './AuctionParticipant.jsx'
+import ReviewParticipant from './ReviewParticipant.jsx'
 import { checkRoom } from '../api.js'
 import { useSession } from '../useSession.js'
 import { useCountdown } from '../useCountdown.js'
@@ -162,10 +163,13 @@ function ParticipantStage({ session }) {
           {state.mode === 'poll' && '📊 投票'}
           {state.mode === 'quiz' && '⭕❌ 快問快答'}
           {state.mode === 'auction' && '🔨 拍賣會'}
+          {state.mode === 'review' && '🏆 期中複習'}
         </span>
 
         {state.mode === 'auction' ? (
           <AuctionParticipant session={session} />
+        ) : state.mode === 'review' ? (
+          <ReviewParticipant session={session} />
         ) : state.mode === 'quiz' ? (
           <>
             <h2 className="phone-question">{state.quiz.question}</h2>

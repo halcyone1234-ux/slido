@@ -4,6 +4,7 @@ const wordcloudService = require('../services/wordcloudService')
 const pollService = require('../services/pollService')
 const quizService = require('../services/quizService')
 const auctionService = require('../services/auctionService')
+const reviewService = require('../services/reviewService')
 
 const rooms = new Map() // roomId -> RoomState
 
@@ -13,6 +14,7 @@ async function loadRoom(roomId, code) {
   const poll = await pollService.loadLatest(roomId)
   const quiz = await quizService.loadLatest(roomId)
   const auction = await auctionService.loadFullView(roomId)
+  const review = await reviewService.loadLatest(roomId)
 
   return {
     roomId,
@@ -23,6 +25,7 @@ async function loadRoom(roomId, code) {
     poll,
     quiz,
     auction,
+    review,
     hands: new Set(), // participantId 集合；記憶體即時態，斷線自動移除、不進資料庫
   }
 }
@@ -34,7 +37,8 @@ async function getRoom(roomId, code) {
   return rooms.get(roomId)
 }
 
-function toClientState(room) {
+// role：'presenter' 會多拿到複習題庫（含正解）；參與者永遠拿不到未公佈的答案。
+function toClientState(room, role) {
   const presence = {}
   const nameById = {}
   for (const sock of room.sockets) {
@@ -65,6 +69,7 @@ function toClientState(room) {
     },
     presence,
     hands,
+    review: reviewService.toClientView(room.review, role),
     auction: {
       status: room.auction.status,
       item: room.auction.item,
@@ -85,7 +90,17 @@ function broadcastAll(room, payload) {
 }
 
 function broadcastState(room) {
-  broadcastAll(room, { type: 'state', state: toClientState(room) })
+  // 主持人與參與者看到的 state 不同（題庫正解只給主持人），各算一份。
+  const participantState = toClientState(room, 'participant')
+  let presenterState = null
+  for (const sock of room.sockets) {
+    if (sock.role === 'presenter') {
+      if (!presenterState) presenterState = toClientState(room, 'presenter')
+      send(sock, { type: 'state', state: presenterState })
+    } else {
+      send(sock, { type: 'state', state: participantState })
+    }
+  }
 }
 
 module.exports = { getRoom, toClientState, broadcastState, broadcastAll, send, rooms }

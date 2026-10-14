@@ -12,6 +12,7 @@ const pollHandlers = require('./handlers/poll')
 const quizHandlers = require('./handlers/quiz')
 const auctionHandlers = require('./handlers/auction')
 const handHandlers = require('./handlers/hand')
+const reviewHandlers = require('./handlers/review')
 
 const HELLO_TIMEOUT_MS = 10_000
 const IP_CONNECT_LIMIT = 20
@@ -43,6 +44,16 @@ const handlers = {
   'auction.useItem': auctionHandlers.useItem,
   'auction.giveMoney': auctionHandlers.giveMoney,
   'auction.reset': auctionHandlers.reset,
+  'review.setQuestions': reviewHandlers.setQuestions,
+  'review.useDefault': reviewHandlers.useDefault,
+  'review.start': reviewHandlers.start,
+  'review.end': reviewHandlers.end,
+  'review.next': reviewHandlers.next,
+  'review.finish': reviewHandlers.finish,
+  'review.recap': reviewHandlers.recap,
+  'review.results': reviewHandlers.results,
+  'review.reset': reviewHandlers.reset,
+  'review.answer': reviewHandlers.answer,
   'hand.set': handHandlers.set,
   'hand.clearAll': handHandlers.clearAll,
   'room.end': async (room, ws) => {
@@ -108,14 +119,15 @@ async function handleHello(ws, data) {
     role: ws.role,
     participantId: ws.participantId || null,
     clientToken: ws._newClientToken || null,
-    state: roomState.toClientState(room),
+    state: roomState.toClientState(room, ws.role),
   })
 
   if (ws.role === 'participant') roomState.broadcastState(room)
 }
 
 function createWsServer(httpServer) {
-  const wss = new WebSocketServer({ server: httpServer, path: '/ws', maxPayload: 8192 })
+  // 64KB：主持人一次上傳整份複習題庫（數十題含解析）需要比 8KB 大的上限；其餘訊息仍受 zod 長度限制。
+  const wss = new WebSocketServer({ server: httpServer, path: '/ws', maxPayload: 65536 })
 
   wss.on('connection', (ws, req) => {
     const ip = req.socket.remoteAddress

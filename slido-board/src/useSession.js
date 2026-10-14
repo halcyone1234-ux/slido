@@ -22,6 +22,19 @@ const emptyState = {
   quiz: { question: '', responses: {}, endsAt: null, durationSec: null },
   presence: {},
   hands: [], // [{ id, name }] 目前舉手者，記憶體即時態
+  review: {
+    gameId: null,
+    title: '',
+    status: 'lobby',
+    index: 0,
+    total: 0,
+    question: null,
+    responses: {},
+    answeredCount: 0,
+    reveal: null,
+    results: null,
+    bank: null, // 只有主持人會拿到（含正解）
+  },
   auction: { status: 'idle', item: '', highestBid: 0, highestBidder: null, participants: {}, sold: [] },
 }
 
@@ -92,6 +105,21 @@ export function useSession(opts) {
   const startQuizRound = useCallback((seconds) => send({ type: 'quiz.start', seconds }), [])
   const endQuizRound = useCallback(() => send({ type: 'quiz.end' }), [])
 
+  // 期中複習競賽（Kahoot 式四選一）
+  const setReviewQuestions = useCallback(
+    (title, questions) => send({ type: 'review.setQuestions', title, questions }),
+    [],
+  )
+  const useDefaultReview = useCallback(() => send({ type: 'review.useDefault' }), [])
+  const startReview = useCallback(() => send({ type: 'review.start' }), [])
+  const endReviewQuestion = useCallback(() => send({ type: 'review.end' }), [])
+  const nextReviewQuestion = useCallback(() => send({ type: 'review.next' }), [])
+  const finishReview = useCallback(() => send({ type: 'review.finish' }), [])
+  const recapReview = useCallback((index) => send({ type: 'review.recap', index }), [])
+  const showReviewResults = useCallback(() => send({ type: 'review.results' }), [])
+  const resetReview = useCallback(() => send({ type: 'review.reset' }), [])
+  const answerReview = useCallback((index, choice) => send({ type: 'review.answer', index, choice }), [])
+
   // 舉手：參與者切換自己舉手/放下；主持人一鍵全部放下。
   const setHand = useCallback((raised) => send({ type: 'hand.set', raised }), [])
   const clearHands = useCallback(() => send({ type: 'hand.clearAll' }), [])
@@ -128,6 +156,16 @@ export function useSession(opts) {
     endQuizRound,
     setHand,
     clearHands,
+    setReviewQuestions,
+    useDefaultReview,
+    startReview,
+    endReviewQuestion,
+    nextReviewQuestion,
+    finishReview,
+    recapReview,
+    showReviewResults,
+    resetReview,
+    answerReview,
     join,
     leave,
     registerBidder,

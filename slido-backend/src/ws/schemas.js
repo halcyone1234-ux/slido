@@ -12,7 +12,7 @@ const helloSchema = z.object({
 // One schema per C2S action, keyed by `type`. Anything that doesn't match a known
 // type or fails validation is dropped before it reaches business logic.
 const messageSchemas = {
-  'mode.set': z.object({ type: z.literal('mode.set'), mode: z.enum(['wordcloud', 'poll', 'quiz', 'auction']) }),
+  'mode.set': z.object({ type: z.literal('mode.set'), mode: z.enum(['wordcloud', 'poll', 'quiz', 'auction', 'review']) }),
 
   'wordcloud.setQuestion': z.object({ type: z.literal('wordcloud.setQuestion'), question: z.string().min(1).max(200) }),
   'wordcloud.clear': z.object({ type: z.literal('wordcloud.clear') }),
@@ -50,6 +50,42 @@ const messageSchemas = {
     amount: z.number().min(-1_000_000).max(1_000_000),
   }),
   'auction.reset': z.object({ type: z.literal('auction.reset') }),
+
+  // 期中複習競賽（四選一）
+  'review.setQuestions': z.object({
+    type: z.literal('review.setQuestions'),
+    title: z.string().max(120),
+    questions: z
+      .array(
+        z.object({
+          section: z.string().max(80).optional(),
+          text: z.string().min(1).max(600),
+          options: z.object({
+            A: z.string().max(300),
+            B: z.string().max(300),
+            C: z.string().max(300),
+            D: z.string().max(300),
+          }),
+          answer: z.enum(['A', 'B', 'C', 'D']),
+          explain: z.string().max(600).optional(),
+        }),
+      )
+      .min(1)
+      .max(60),
+  }),
+  'review.useDefault': z.object({ type: z.literal('review.useDefault') }),
+  'review.start': z.object({ type: z.literal('review.start') }),
+  'review.end': z.object({ type: z.literal('review.end') }),
+  'review.next': z.object({ type: z.literal('review.next') }),
+  'review.finish': z.object({ type: z.literal('review.finish') }),
+  'review.recap': z.object({ type: z.literal('review.recap'), index: z.number().int().min(0).max(59) }),
+  'review.results': z.object({ type: z.literal('review.results') }),
+  'review.reset': z.object({ type: z.literal('review.reset') }),
+  'review.answer': z.object({
+    type: z.literal('review.answer'),
+    index: z.number().int().min(0).max(59),
+    choice: z.enum(['A', 'B', 'C', 'D']),
+  }),
 
   'hand.set': z.object({ type: z.literal('hand.set'), raised: z.boolean() }),
   'hand.clearAll': z.object({ type: z.literal('hand.clearAll') }),
